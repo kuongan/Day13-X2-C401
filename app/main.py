@@ -15,6 +15,11 @@ from .pii import hash_user_id, summarize_text
 from .schemas import ChatRequest, ChatResponse
 from .tracing import tracing_enabled
 
+
+from structlog.contextvars import bind_contextvars
+import hashlib
+import os
+
 configure_logging()
 log = get_logger()
 app = FastAPI(title="Day 13 Observability Lab")
@@ -46,6 +51,18 @@ async def metrics() -> dict:
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     # TODO: Enrich logs with request context (user_id_hash, session_id, feature, model, env)
     # bind_contextvars(...)
+    # --- ENRICH LOGS START ---
+    # 1. Băm user_id để bảo vệ PII nhưng vẫn cho phép tracking hành vi theo user
+    user_id_hash = hashlib.sha256(body.user_id.encode()).hexdigest()[:12]
+
+    # 2. Bind toàn bộ ngữ cảnh vào logger
+    bind_contextvars(
+        user_id_hash=user_id_hash,
+        session_id=body.session_id,
+        feature=body.feature or "default_chat",
+        model=os.getenv("LLM_MODEL", "gpt-4o"), # Giả định model
+        env=os.getenv("APP_ENV", "dev"),
+    )
     
     log.info(
         "request_received",
@@ -107,3 +124,4 @@ async def disable_incident(name: str) -> JSONResponse:
         return JSONResponse({"ok": True, "incidents": status()})
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
