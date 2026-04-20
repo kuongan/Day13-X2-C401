@@ -56,7 +56,7 @@ Estimated Score: 100/100
 | Cost Budget |  0.2$ | 30m| 0.0885$|
 
 ### 3.3 Alerts & Runbook
-- ALERT_RULES_SCREENSHOT: ![alt text](image-1.png)
+- ALERT_RULES_SCREENSHOT: ![alt text](Images/alert_rules.png)
 - SAMPLE_RUNBOOK_LINK: docs/alerts.md
 
 ---
@@ -75,8 +75,35 @@ Estimated Score: 100/100
 
 **ROOT_CAUSE_PROVED_BY**:
 
-  - Trace ID: 
-  - So sánh với baseline (~150ms) cho thấy độ trễ tăng bất thường tại bước retrieval
+  - Trace: 
+  ```
+  ATTACK: rag_slow  —  RAG Latency Spike
+============================================================
+
+  [1/3] Collecting baseline latency (rag_slow OFF)...
+    200  235ms  What is your refund policy?
+    200  155ms  Explain monitoring and observability
+    200  155ms  Summarize the logging policy
+    200  155ms  What about policy and refund?
+    200  155ms  Help me with monitoring policy
+
+  [2/3] Enabling rag_slow toggle and firing attack requests...
+    200  2656ms  What is your refund policy?
+    200  2656ms  Explain monitoring and observability
+    200  2656ms  Summarize the logging policy
+    200  2656ms  What about policy and refund?
+    200  2656ms  Help me with monitoring policy
+
+  [3/3] Disabling rag_slow toggle...
+
+  --------------------------------------------------
+  Impact Report
+  --------------------------------------------------
+  Baseline  p50=155ms  p95=155ms
+  Attack    p50=2656ms  p95=2656ms
+  Delta     p50 +2501ms  p95 +2501ms
+  ```
+  - So sánh với baseline (~155ms) cho thấy độ trễ tăng bất thường tại bước retrieval
 
  **FIX_ACTION**:
 
