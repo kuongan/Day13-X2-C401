@@ -2,14 +2,14 @@ service: day13-observability-lab
 window: 28d
 slis:
   latency_p95_ms:
-    objective: 3000
+    objective: 2500
     target: 99.0
-    rationale: Keep tail latency under 3s for most requests while allowing occasional spikes.
+    rationale: Keep tail latency under 2.5s for most requests while allowing occasional spikes.
   error_rate_pct:
     objective: 1.5
     target: 99.0
-  daily_cost_usd:
-    objective: 2.0
+  total_cost_usd:
+    objective: 0.2
     target: 95.0
   quality_score_avg:
     objective: 0.75

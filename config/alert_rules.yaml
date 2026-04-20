@@ -1,7 +1,7 @@
 alerts:
   - name: high_latency_p95
     severity: P2
-    condition: latency_p95_ms > 3000 for 10m
+    condition: latency_p95_ms > 2500 for 10m
     type: symptom-based
     owner: member-c-oncall
     runbook: docs/alerts.md#1-high-latency-p95
@@ -13,7 +13,7 @@ alerts:
     runbook: docs/alerts.md#2-high-error-rate
   - name: cost_budget_spike
     severity: P2
-    condition: daily_cost_usd > 2.0 for 30m
+    condition: total_cost_usd > 0.2 for 30m
     type: symptom-based
     owner: member-c-finops
     runbook: docs/alerts.md#3-cost-budget-spike

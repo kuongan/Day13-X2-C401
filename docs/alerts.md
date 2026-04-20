@@ -2,7 +2,7 @@
 
 ## 1. High latency P95
 - Severity: P2
-- Trigger: `latency_p95_ms > 3000 for 10m`
+- Trigger: `latency_p95_ms > 2500 for 10m`
 - Impact: tail latency breaches SLO
 - First checks:
   1. Open top slow traces in the last 1h
@@ -28,7 +28,7 @@
 
 ## 3. Cost budget spike
 - Severity: P2
-- Trigger: `daily_cost_usd > 2.0 for 30m`
+- Trigger: `total_cost_usd > 0.2 for 30m`
 - Impact: burn rate exceeds budget
 - First checks:
   1. Split traces by feature and model
@@ -38,3 +38,6 @@
   - shorten prompts
   - route easy requests to cheaper model
   - apply prompt cache
+
+## Notes
+- Lab metric mapping: use `/metrics.latency_p95` as `latency_p95_ms`, and `/metrics.total_cost_usd` as the cost alert proxy.
