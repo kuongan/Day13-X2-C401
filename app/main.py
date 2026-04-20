@@ -1,30 +1,29 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from structlog.contextvars import bind_contextvars
 
 from .agent import LabAgent
 from .incidents import disable, enable, status
 from .logging_config import configure_logging, get_logger
-from .metrics import record_error, snapshot
+from .metrics import dashboard_snapshot, record_error, snapshot
 from .middleware import CorrelationIdMiddleware
 from .pii import hash_user_id, summarize_text
 from .schemas import ChatRequest, ChatResponse
 from .tracing import tracing_enabled
-
-
-from structlog.contextvars import bind_contextvars
-import hashlib
-import os
 
 configure_logging()
 log = get_logger()
 app = FastAPI(title="Day 13 Observability Lab")
 app.add_middleware(CorrelationIdMiddleware)
 agent = LabAgent()
+# STATIC_DIR = Path(__file__).resolve().parent / "static"
+# app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.on_event("startup")
@@ -42,28 +41,32 @@ async def health() -> dict:
     return {"ok": True, "tracing_enabled": tracing_enabled(), "incidents": status()}
 
 
+# @app.get("/dashboard")
+# async def dashboard() -> FileResponse:
+#     return FileResponse(STATIC_DIR / "dashboard.html")
+
+
 @app.get("/metrics")
 async def metrics() -> dict:
     return snapshot()
 
 
+@app.get("/metrics/dashboard")
+async def metrics_dashboard(window_minutes: int = 60, bucket_seconds: int = 60) -> dict:
+    return dashboard_snapshot(window_minutes=window_minutes, bucket_seconds=bucket_seconds)
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
-    # TODO: Enrich logs with request context (user_id_hash, session_id, feature, model, env)
-    # bind_contextvars(...)
-    # --- ENRICH LOGS START ---
-    # 1. Băm user_id để bảo vệ PII nhưng vẫn cho phép tracking hành vi theo user
-    user_id_hash = hashlib.sha256(body.user_id.encode()).hexdigest()[:12]
-
-    # 2. Bind toàn bộ ngữ cảnh vào logger
+    user_id_hash = hash_user_id(body.user_id)
     bind_contextvars(
         user_id_hash=user_id_hash,
         session_id=body.session_id,
         feature=body.feature or "default_chat",
-        model=os.getenv("LLM_MODEL", "gpt-4o"), # Giả định model
+        model=os.getenv("LLM_MODEL", "gpt-4o"),
         env=os.getenv("APP_ENV", "dev"),
     )
-    
+
     log.info(
         "request_received",
         service="api",
