@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observability Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Day 13 Observability Lab</p>
+        <h1>Metrics dashboard with JSON dataset explorer</h1>
+        <p class="hero-copy">
+          Live metrics from <code>/metrics/dashboard</code> and a local file loader that reads JSON or JSONL
+          using the <code>sample_queries</code> schema.
+        </p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-pill">
+          <span class="meta-label">Window</span>
+          <strong id="windowLabel">60 minutes</strong>
+        </div>
+        <div class="meta-pill">
+          <span class="meta-label">Updated</span>
+          <strong id="generatedAt">Waiting for data</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <label class="control">
+        <span>Window (minutes)</span>
+        <input id="windowInput" type="number" min="1" max="240" value="60">
+      </label>
+      <label class="control">
+        <span>Bucket (seconds)</span>
+        <input id="bucketInput" type="number" min="10" max="300" step="10" value="60">
+      </label>
+      <button id="refreshBtn" class="button primary" type="button">Refresh dashboard</button>
+      <button id="autoRefreshBtn" class="button ghost" type="button">Pause auto refresh</button>
+    </section>
+
+    <section class="summary-grid" id="summaryGrid">
+      <article class="stat-card">
+        <span class="stat-label">Traffic</span>
+        <strong class="stat-value" id="trafficValue">0</strong>
+        <span class="stat-foot">Requests handled</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Latency P95</span>
+        <strong class="stat-value" id="latencyValue">0 ms</strong>
+        <span class="stat-foot">SLO line: 2000 ms</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Error Rate</span>
+        <strong class="stat-value" id="errorRateValue">0%</strong>
+        <span class="stat-foot">Target under 1%</span>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Total Cost</span>
+        <strong class="stat-value" id="costValue">$0.0000</strong>
+        <span class="stat-foot">Accumulated over the current app run</span>
+      </article>
+    </section>
+
+    <section class="panel-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 1</p>
+            <h2>Latency P50 / P95 / P99</h2>
+          </div>
+          <span class="panel-threshold">SLO 2000 ms</span>
+        </div>
+        <div class="chart-legend">
+          <span><i class="dot dot-p50"></i>P50</span>
+          <span><i class="dot dot-p95"></i>P95</span>
+          <span><i class="dot dot-p99"></i>P99</span>
+        </div>
+        <svg id="latencyChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 2</p>
+            <h2>Traffic</h2>
+          </div>
+          <span class="panel-threshold">Requests and QPS</span>
+        </div>
+        <svg id="trafficChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 3</p>
+            <h2>Error rate</h2>
+          </div>
+          <span class="panel-threshold">SLO 1%</span>
+        </div>
+        <svg id="errorChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 4</p>
+            <h2>Cost over time</h2>
+          </div>
+          <span class="panel-threshold">$5/hour threshold</span>
+        </div>
+        <svg id="costChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 5</p>
+            <h2>Tokens in / out</h2>
+          </div>
+          <span class="panel-threshold">Per bucket totals</span>
+        </div>
+        <svg id="tokensChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-kicker">Panel 6</p>
+            <h2>Quality proxy</h2>
+          </div>
+          <span class="panel-threshold">Hallucination target under 5%</span>
+        </div>
+        <svg id="qualityChart" class="chart" viewBox="0 0 640 240" preserveAspectRatio="none"></svg>
+      </article>
+    </section>
+
+    <section class="dataset-section">
+      <div class="dataset-head">
+        <div>
+          <p class="panel-kicker">Local file loader</p>
+          <h2>Import JSON or JSONL based on <code>sample_queries</code></h2>
+          <p class="section-copy">
+            Accepted shape: <code>user_id</code>, <code>session_id</code>, <code>feature</code>, <code>message</code>.
+          </p>
+        </div>
+        <div class="upload-actions">
+          <label class="upload-box">
+            <input id="fileInput" type="file" accept=".json,.jsonl,application/json">
+            <span>Select file</span>
+          </label>
+          <button id="runQueriesBtn" class="button primary" type="button" disabled>Run loaded queries</button>
+        </div>
+      </div>
+
+      <div id="fileStatus" class="file-status">No file loaded yet.</div>
+      <div id="runStatus" class="file-status muted-status">Queries have not been executed yet.</div>
+
+      <div class="dataset-summary">
+        <article class="mini-card">
+          <span class="mini-label">Records</span>
+          <strong id="recordsCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Unique users</span>
+          <strong id="usersCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Unique sessions</span>
+          <strong id="sessionsCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Avg message length</span>
+          <strong id="messageLength">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Executed</span>
+          <strong id="executedCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Success</span>
+          <strong id="successCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Failed</span>
+          <strong id="failedCount">0</strong>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Avg response time</span>
+          <strong id="avgResponseTime">0 ms</strong>
+        </article>
+      </div>
+
+      <div class="dataset-layout">
+        <article class="dataset-card">
+          <h3>Feature distribution</h3>
+          <div id="featureBars" class="bars-empty">Load a file to see distribution.</div>
+        </article>
+
+        <article class="dataset-card">
+          <h3>Preview</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Session</th>
+                  <th>Feature</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody">
+                <tr>
+                  <td colspan="4" class="empty-cell">No records loaded.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
